@@ -1,0 +1,2 @@
+Load counts data from features_combined.txt
+  counts <- as.matrix(read.table("features_combined.txt", header = TRUE, row.names = 1, sep = "\t"))
