@@ -1,2 +1,61 @@
+**Alignment and Summarized Experiment Creation**
+
 Load counts data from features_combined.txt
-  counts <- as.matrix(read.table("features_combined.txt", header = TRUE, row.names = 1, sep = "\t"))
+
+Check to see if it loads 
+
+Load the metadata file (meta_data.txt) as the colData
+
+Align the metadata with the counts
+
+Create a summarizedexperiment-like object to save the data in
+
+Filter the col_data to remove the disease status that is "tb_hiv_art"
+
+Filter out the 0 counts across all samples
+
+Create a new summarizedexperiment without the samples that we have filtered out 
+
+** Create PCA Plot **
+
+Convert to CPM and log-transform the pseudocount 
+
+Transpose so samples are rows and genes are columns (PCA expects variables in columns)
+
+Run PCA using prcomp (center & scale recommended)
+
+** Create MDS (since we cannot run DESeq2) from PCA Distances **
+
+Calculate distances between samples in PCA space (using first 10 PCs)
+
+Run classical MDS
+
+Plot MDS colored by disease
+
+** Limma Analysis **
+
+Load library and define variables
+
+Filter to TB-HIV and HIV-only
+
+Make group variable a factor with "hiv_only" as the reference
+
+Check sample alignment
+
+Manually calculate library sizes
+
+Create logCPM matrix manually (as you already did)
+
+Use limma on the logCPM matrix
+
+** Create Heatmap **
+
+Pull top 50 genes from your logCPM matrix
+
+Get disease status for columns
+
+Assign colors to groups and assign matrix of colors to plot as a color bar
+
+Set layout to include annotation and color bar 
+
+Plot heatmap
