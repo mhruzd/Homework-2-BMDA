@@ -85,7 +85,141 @@ summary(pca_res)
 ```
 
 
-*Run MDS from PCA Distances*
+*Run MDS from PCA Distances (Similar to UMAP)*
+
+Calculate distances between the samples in the PCA space (using the first 10 PCs)
+```{r}
+pca_dist <- dist(pca_res$x[,1:10])
+```
+
+Run classic MDS
+```{r}
+mds_res <- cmdscale(pca_dist, k = 2)
+```
+
+Plot MDS colored by disease status
+```{r}
+plot(mds_res[,1], mds_res[,2],
+     col = as.factor(se_final$colData$Disease),
+     pch = 19,
+     xlab = "MDS 1",
+     ylab = "MDS 2",
+     main = "MDS on PCA distances")
+
+legend("topright", legend = unique(se_final$colData$Disease),
+       col = 1:length(unique(se_final$colData$Disease)), pch = 19)
+```
+
+*Conduct the same analysis using limma on the log CPM values*
+
+Load library and assign vairables to run the analysis 
+```{r}
+library(limma)
+
+counts <- se_final$assays$counts
+
+meta <- se_final$colData
+```
+
+Filter for TB-HIV and HIV-only disease status
+```{r}
+keep <- meta$Disease %in% c("tb_hiv", "hiv_only")
+counts_sub <- counts[, keep]
+meta_sub <- meta[keep, , drop = FALSE]
+```
+
+Make the group variable a factor with "hiv_only" as the reference 
+```{r}
+group <- factor(meta_sub$Disease, levels = c("hiv_only", "tb_hiv"))
+```
+
+Check the sample alignment to make sure that everything looks good 
+```{r}
+stopifnot(all(colnames(counts_sub) == rownames(meta_sub)))
+```
+
+Manually calculate the library sises 
+```{r}
+lib_sizes <- colSums(counts_sub)
+```
+
+Crteate a logCPM matrix manually (like before)
+```{r}
+cpm_matrix <- t(t(counts_sub) / lib_sizes * 1e6)
+
+log_cpm <- log2(cpm_matrix + 1)
+```
+
+Use limma on the logCPM matrix 
+```{r}
+design <- model.matrix(~ group)
+fit <- lmFit(log_cpm, design)
+fit <- eBayes(fit)
+```
+
+Get the top 50 genes
+```{r}
+res <- topTable(fit, coef = 2, number = Inf, sort.by = "P")
+
+top50 <- head(res, 50)
+
+write.csv(top50, file = "top50_limma_DE_genes.csv")
+```
 
 
+*Create a heatmap plot of the limma results*
 
+Pull the top 50 genes from the logCPM matrix that was just calculated in the prior step
+```{r}
+top_genes <- rownames(top50)
+
+log_cpm <- se_final$assays$logCPM
+
+log_cpm_top50 <- log_cpm[top_genes, ]
+```
+
+Get the disease status for the columns
+```{r}
+group <- se_final$colData$Disease
+
+group <- group[colnames(log_cpm_top50)]
+```
+
+Assign colors to the groups for the different dieases statuses
+```{r}
+group_colors <- as.character(factor(group, 
+                         levels = c("hiv_only", "tb_hiv", "tb_hiv_art"),
+                         labels = c("blue", "red", "purple")))
+```
+
+Get the matrix of colors to plot as a color bar 
+```{r}
+col_annotation <- matrix(group_colors, nrow = 1)
+
+layout(matrix(c(1, 2), nrow = 2), heights = c(1, 10))
+
+par(mar = c(0, 5, 2, 2))  
+image(1:ncol(log_cpm_top50), 1, col_annotation,
+      col = c("blue", "red", "purple"),
+      axes = FALSE, xlab = "", ylab = "")
+title("Disease Status")
+```
+Plot heatmap
+```{r}
+par(mar = c(0, 5, 2, 2))  
+image(1:ncol(log_cpm_top50), 1, matrix(group_colors, nrow = 1),
+      col = c("blue", "red", "purple"),
+      axes = FALSE, xlab = "", ylab = "")
+title("Disease Status")
+
+par(mar = c(5, 5, 2, 2))
+heatmap(as.matrix(log_cpm_top50),
+        scale = "row",
+        Colv = NA,  # skip clustering samples (optional)
+        Rowv = TRUE,
+        col = heat.colors(256),
+        labCol = FALSE,  # hide sample names to keep plot clean
+        margins = c(5, 10))
+
+dev.off()
+```
