@@ -1,5 +1,6 @@
 **This is the code that I used for Homework 2 for Biomedical Data Analysis Course. I had to use R version 3.5.1 on the Rutgers Amarel desktop. There are some work arounds, since this version of R was not up to date.**
 
+
 *Align the data, make a SummarizedExperiment and filter the data:*
 
 Load counts data from features_combined.txt
@@ -45,4 +46,46 @@ Remove 0 counts across all samples
 ```{r}
 counts_filtered <- counts_filtered[rowSums(counts_filtered) > 0, ]
 ```
+
+
+*Generate dimension reduction plots applying PCA*
+
+Convert to CPM manually 
+```{r}
+lib_sizes <- colSums(counts_filtered)
+
+cpm_matrix <- t(t(counts_filtered) / lib_sizes * 1e6)
+```
+
+Log-transform with pseudocount
+```{r}
+log_cpm <- log2(cpm_matrix + 1)
+```
+Create another (final) SummarizedExperiment with the filtered data and the logCPM
+```{r}
+se_final <- list(
+  assays = list(
+    counts = counts_filtered,
+    logCPM = log_cpm
+  ),
+  colData = col_data_filtered
+)
+```
+
+Transpose the sampels as rows and genes as columns since PCA expects the variables to be presented as columns (otherwise will not run)
+```{r}
+logCPM_t <- t(se_final$assays$logCPM)
+```
+
+Run PCA using procomp
+```{r}
+pca_res <- prcomp(logCPM_t, center = TRUE, scale. = TRUE)
+
+summary(pca_res)
+```
+
+
+*Run MDS from PCA Distances*
+
+
 
