@@ -1,9 +1,9 @@
 **This is the code that I used for Homework 2 for Biomedical Data Analysis Course. I had to use R version 3.5.1 on the Rutgers Amarel desktop. There are some work arounds, since this version of R was not up to date.**
 
 
-*Align the data, make a SummarizedExperiment and filter the data:*
+*Align and filter the data:*
 
-Load counts data from features_combined.txt
+Load counts data from `features_combined.txt`
 ```{r}
 counts <- as.matrix(read.table("features_combined.txt", header = TRUE, row.names = 1, sep = "\t"))
 ```
@@ -15,7 +15,7 @@ dim(counts)
 head(colnames(counts))
 ```
 
-Load the metadata file (meta_data.txt) as the colData
+Load the metadata file (`meta_data.txt`) as the `colData`
 ```{r}
 col_data <- read.table("meta_data.txt", header = TRUE, row.names = 1, sep = "", stringsAsFactors = FALSE)
 ```
@@ -25,7 +25,7 @@ Align metadata with counts
 col_data <- col_data[colnames(counts), ]
 ```
 
-Get a summarizedexperiment-like data set saved (with this version of R, we cannot load the summarizedexperiment package, so this is a workaround)
+Get a `summarizedexperiment`-like data set saved (with this version of R, we cannot load the `summarizedexperiment` package, so this is a workaround)
 ```{r}
 se_like <- list(
   assays = list(counts = counts),
@@ -33,7 +33,7 @@ se_like <- list(
 )
 ```
 
-Remove "tb_hiv_art" samples from colData
+Remove `tb_hiv_art` samples from `colData`
 ```{r}
 col_data_filtered <- col_data[col_data$Disease != "tb_hiv_art", , drop = FALSE]
 
@@ -61,7 +61,8 @@ Log-transform with pseudocount
 ```{r}
 log_cpm <- log2(cpm_matrix + 1)
 ```
-Create another (final) SummarizedExperiment with the filtered data and the logCPM
+
+Create another (final) `SummarizedExperiment` with the filtered data and the logCPM
 ```{r}
 se_final <- list(
   assays = list(
@@ -77,7 +78,7 @@ Transpose the sampels as rows and genes as columns since PCA expects the variabl
 logCPM_t <- t(se_final$assays$logCPM)
 ```
 
-Run PCA using procomp
+Run PCA using `procomp`
 ```{r}
 pca_res <- prcomp(logCPM_t, center = TRUE, scale. = TRUE)
 
@@ -85,14 +86,14 @@ summary(pca_res)
 ```
 
 
-*Run MDS from PCA Distances (Similar to UMAP)*
+*Run MDS from PCA Distances*
 
 Calculate distances between the samples in the PCA space (using the first 10 PCs)
 ```{r}
 pca_dist <- dist(pca_res$x[,1:10])
 ```
 
-Run classic MDS
+Run classic MDS (since we cannot use `UMAP` with this version of R)
 ```{r}
 mds_res <- cmdscale(pca_dist, k = 2)
 ```
@@ -110,9 +111,9 @@ legend("topright", legend = unique(se_final$colData$Disease),
        col = 1:length(unique(se_final$colData$Disease)), pch = 19)
 ```
 
-*Conduct the same analysis using limma on the log CPM values*
+*Conduct the same analysis on the log CPM values*
 
-Load library and assign vairables to run the analysis 
+Load library for `limma` and assign vairables to run the analysis 
 ```{r}
 library(limma)
 
@@ -121,14 +122,14 @@ counts <- se_final$assays$counts
 meta <- se_final$colData
 ```
 
-Filter for TB-HIV and HIV-only disease status
+Filter for `TB-HIV` and `HIV-only` disease status
 ```{r}
 keep <- meta$Disease %in% c("tb_hiv", "hiv_only")
 counts_sub <- counts[, keep]
 meta_sub <- meta[keep, , drop = FALSE]
 ```
 
-Make the group variable a factor with "hiv_only" as the reference 
+Make the group variable a factor with `hiv_only` as the reference 
 ```{r}
 group <- factor(meta_sub$Disease, levels = c("hiv_only", "tb_hiv"))
 ```
@@ -150,7 +151,7 @@ cpm_matrix <- t(t(counts_sub) / lib_sizes * 1e6)
 log_cpm <- log2(cpm_matrix + 1)
 ```
 
-Use limma on the logCPM matrix 
+Use `limma` on the logCPM matrix 
 ```{r}
 design <- model.matrix(~ group)
 fit <- lmFit(log_cpm, design)
@@ -167,9 +168,9 @@ write.csv(top50, file = "top50_limma_DE_genes.csv")
 ```
 
 
-*Create a heatmap plot of the limma results*
+*Create a heatmap plot of the results*
 
-Pull the top 50 genes from the logCPM matrix that was just calculated in the prior step
+Pull the top 50 genes from the logCPM matrix that was just calculated with `limma` in the prior step
 ```{r}
 top_genes <- rownames(top50)
 
@@ -204,7 +205,8 @@ image(1:ncol(log_cpm_top50), 1, col_annotation,
       axes = FALSE, xlab = "", ylab = "")
 title("Disease Status")
 ```
-Plot heatmap
+
+Plot heatmap using the `heatmap` package
 ```{r}
 par(mar = c(0, 5, 2, 2))  
 image(1:ncol(log_cpm_top50), 1, matrix(group_colors, nrow = 1),
