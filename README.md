@@ -1,5 +1,7 @@
 **This is the code that I used for Homework 2 for Biomedical Data Analysis Course. I had to use R version 3.5.1 on the Rutgers Amarel desktop. There are some work arounds, since this version of R was not up to date.**
 
+*Align the data, make a SummarizedExperiment and filter the data:*
+
 Load counts data from features_combined.txt
 ```{r}
 counts <- as.matrix(read.table("features_combined.txt", header = TRUE, row.names = 1, sep = "\t"))
@@ -36,10 +38,11 @@ col_data_filtered <- col_data[col_data$Disease != "tb_hiv_art", , drop = FALSE]
 
 counts_filtered <- counts[, rownames(col_data_filtered)]
 
-all(colnames(counts_filtered) == rownames(col_data_filtered))  
+all(colnames(counts_filtered) == rownames(col_data_filtered))
 ```
 
 Remove 0 counts across all samples
 ```{r}
 counts_filtered <- counts_filtered[rowSums(counts_filtered) > 0, ]
 ```
+
