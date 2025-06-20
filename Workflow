@@ -1,4 +1,4 @@
-**Alignment and Summarized Experiment Creation**
+**Alignment and Summarized Experiment Creation** 
 
 Load counts data from features_combined.txt
 
